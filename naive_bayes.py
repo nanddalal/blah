@@ -42,7 +42,7 @@ def load_classification_data():
     return train_x, train_y, val_x, val_y
 
 
-def gaussian_prior(x, mean, std):
+def gaussian_pdf(x, mean, std):
     return np.exp(-1 * ((x-mean)**2) / (2*(std**2)) ) / np.sqrt(2*np.pi*(std**2))
 
 
@@ -90,7 +90,7 @@ class GaussianNB(object):
         for classid in self.classids:
             mean = self.mean_by_classid[classid]
             std = self.std_by_classid[classid]
-            prior = gaussian_prior(x, mean, std)
+            prior = gaussian_pdf(x, mean, std)
             likelihood = self.class_freqs[classid]
             posterior = np.prod(prior, axis=1) * likelihood
             posterior_by_classid[classid] = posterior
