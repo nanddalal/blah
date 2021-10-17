@@ -16,6 +16,13 @@ p(y|x) = p(x|y) * p(y)
 Independence assumption -> naive bayes
 p(y_j|x) = \prod_i{p(x_i|y_j)} * p(y_j)
 
+\log{p(y_j|x)} = \log{\prod_i{p(x_i|y_j)} * p(y_j)}
+
+\log{p(y_j|x)} = \sum_i{\log{p(x_i|y_j)}} + \log{p(y_j)}
+
+Log likelihood -> linear classifier
+\log{p(y_j|x)} = (x @ w_j) + b_j
+
 https://en.wikipedia.org/wiki/Naive_Bayes_classifier
 """
 
@@ -25,6 +32,7 @@ np.random.seed(123)
 # from sklearn.datasets import load_iris as load_data_func
 from sklearn.datasets import load_wine as load_data_func
 from sklearn.naive_bayes import GaussianNB as SklearnGaussianNB
+from sklearn.naive_bayes import MultinomialNB as SklearnMultinomialNB
 
 
 def load_classification_data():
@@ -115,6 +123,60 @@ class GaussianNB(object):
         return preds
 
 
+class MultinomialNB(object):
+    def __init__(self):
+        self.fitted = False
+
+    def fit(self, train_x, train_y):
+        """Fit the model.
+
+        Arguments:
+            train_x : nsamples x nfeatures
+            train_y : nsamples
+        """
+        if self.fitted:
+            raise
+        self.fitted = True
+
+        self.classids = sorted(set(train_y))
+        self.feature_freqs = {}
+        self.class_freqs = {}
+        for classid in self.classids:
+            cls_mask = train_y == classid
+            train_x_cls = train_x[cls_mask]
+            self.feature_freqs[classid] = np.log(
+                np.sum(train_x_cls, axis=0) / train_x_cls.sum() # TODO: add laplace smoothing
+            )
+            self.class_freqs[classid] = np.log(
+                np.mean(cls_mask)
+            )
+
+    def predict(self, x):
+        """Predict the model.
+
+        Arguments:
+            x : nsamples x nfeatures
+
+        Returns:
+            preds : nsamples
+        """
+        if not self.fitted:
+            raise
+
+        posterior_by_classid = {}
+        for classid in self.classids:
+            likelihoods = x @ self.feature_freqs[classid]
+            prior = self.class_freqs[classid]
+            posterior = likelihoods + prior
+            posterior_by_classid[classid] = posterior
+        probs = np.stack(
+            [posterior_by_classid[classid] for classid in self.classids],
+            axis=1
+        )
+        preds = np.argmax(probs, axis=1)
+        return preds
+
+
 def accuracy(gt, pred):
     return (gt==pred).mean()
 
@@ -122,7 +184,7 @@ def accuracy(gt, pred):
 def main():
     train_x, train_y, val_x, val_y = load_classification_data()
 
-    for nb in [GaussianNB(), SklearnGaussianNB()]:
+    for nb in [GaussianNB(), SklearnGaussianNB(), MultinomialNB(), SklearnMultinomialNB()]:
         print(nb)
         nb.fit(train_x, train_y)
 
