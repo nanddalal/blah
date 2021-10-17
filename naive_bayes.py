@@ -103,9 +103,9 @@ class GaussianNB(object):
         for classid in self.classids:
             mean = self.mean_by_classid[classid]
             std = self.std_by_classid[classid]
-            prior = gaussian_pdf(x, mean, std)
-            likelihood = self.class_freqs[classid]
-            posterior = np.prod(prior, axis=1) * likelihood
+            likelihoods = gaussian_pdf(x, mean, std)
+            prior = self.class_freqs[classid]
+            posterior = np.prod(likelihoods, axis=1) * prior
             posterior_by_classid[classid] = posterior
         probs = np.stack(
             [posterior_by_classid[classid] for classid in self.classids],
