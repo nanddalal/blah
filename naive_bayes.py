@@ -67,6 +67,13 @@ def gaussian_pdf(x, mean, std):
     return np.exp(-1 * ((x-mean)**2) / (2*(std**2)) ) / np.sqrt(2*np.pi*(std**2))
 
 
+def stack_posterior(posterior_by_classid, classids):
+    return np.stack(
+        [posterior_by_classid[classid] for classid in classids],
+        axis=1
+    )
+
+
 class GaussianNB(object):
     def __init__(self):
         self.fitted = False
@@ -115,10 +122,7 @@ class GaussianNB(object):
             prior = self.class_freqs[classid]
             posterior = np.prod(likelihoods, axis=1) * prior
             posterior_by_classid[classid] = posterior
-        probs = np.stack(
-            [posterior_by_classid[classid] for classid in self.classids],
-            axis=1
-        )
+        probs = stack_posterior(posterior_by_classid, self.classids)
         preds = np.argmax(probs, axis=1)
         return preds
 
@@ -169,10 +173,7 @@ class MultinomialNB(object):
             prior = self.class_freqs[classid]
             posterior = likelihoods + prior
             posterior_by_classid[classid] = posterior
-        probs = np.stack(
-            [posterior_by_classid[classid] for classid in self.classids],
-            axis=1
-        )
+        probs = stack_posterior(posterior_by_classid, self.classids)
         preds = np.argmax(probs, axis=1)
         return preds
 
