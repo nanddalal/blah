@@ -1,7 +1,20 @@
 """
+Multiplication rule
+p(x,y) = p(y|x) * p(x)
+
+p(y|x) = p(x,y)
+         ------
+          p(x)
+
+p(x,y) = p(x|y) * p(y)
+
+Bayes rule
 p(y|x) = p(x|y) * p(y)
          -------------
               p(x)
+
+Independence assumption -> naive bayes
+p(y_j|x) = \prod_i{p(x_i|y_j)} * p(y_j)
 
 https://en.wikipedia.org/wiki/Naive_Bayes_classifier
 """
