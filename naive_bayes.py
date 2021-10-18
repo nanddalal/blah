@@ -33,6 +33,8 @@ np.random.seed(123)
 from sklearn.datasets import load_wine as load_data_func
 from sklearn.naive_bayes import GaussianNB as SklearnGaussianNB
 from sklearn.naive_bayes import MultinomialNB as SklearnMultinomialNB
+from sklearn.linear_model import LogisticRegression as SklearnLogisticRegression
+from sklearn.preprocessing import StandardScaler
 
 
 def load_classification_data():
@@ -178,6 +180,99 @@ class MultinomialNB(object):
         return preds
 
 
+def onehot(a):
+    b = np.zeros((a.size, a.max()+1))
+    b[np.arange(a.size),a] = 1
+    return b
+
+
+def sigmoid(a):
+    return 1 / (1+np.exp(-a))
+
+
+class LogisticRegression(object):
+    def __init__(self, lr=0.001, steps=5000):
+        self.fitted = False
+        self.lr = lr
+        self.steps = steps
+
+    def fit(self, train_x, train_y):
+        """Fit the model.
+
+        Arguments:
+            train_x : nsamples x nfeatures
+            train_y : nsamples
+        """
+        if self.fitted:
+            raise
+        self.fitted = True
+
+        self.scaler = StandardScaler()
+        self.scaler.fit(train_x)
+        train_x = self.scaler.transform(train_x)
+
+        x = train_x
+        yhat = onehot(train_y) # nsamples x noutputs
+
+        nfeatures = x.shape[1]
+        noutputs = yhat.shape[1]
+        self.w = np.random.randn(nfeatures, noutputs)
+        self.b = np.zeros((noutputs))
+
+        for i in range(self.steps):
+
+            # [nsamples, noutputs] = [nsamples, nfeatures] * [nfeatures, noutputs] + [noutputs]
+            a = x @ self.w + self.b
+            y = sigmoid(a)
+            L = -yhat * np.log(y)
+
+            if i % 200 == 0:
+                print(f'iter {i}, loss {L.mean()}')
+
+            dLdy = -yhat / y
+
+            dyda = y * (1 - y)
+            dLda = dLdy * dyda
+
+            # [nsamples, nfeatures]
+            dadw = x
+            # [nfeatures, noutputs] = [nsamples, nfeatures].T * [nsamples, noutputs]
+            dLdw = dadw.T @ dLda
+
+            dadb = 1
+            # [nsample, noutputs]
+            dLdb = dLda * dadb
+            # [noutputs]
+            dLdb = np.mean(dLdb, axis=0)
+
+            # [nfeatures, noutputs]
+            dadx = self.w
+            # [nsamples, nfeatures] = [nsamples, noutputs] * [nfeatures, noutputs].T
+            dLdx = dLda @ dadx.T
+
+            # TODO: add l2 regularization
+            self.w = self.w - (self.lr * dLdw)
+            self.b = self.b - (self.lr * dLdb)
+
+    def predict(self, x):
+        """Predict the model.
+
+        Arguments:
+            x : nsamples x nfeatures
+
+        Returns:
+            preds : nsamples
+        """
+        if not self.fitted:
+            raise
+
+        x = self.scaler.transform(x)
+
+        y = x @ self.w + self.b
+        preds = np.argmax(y, axis=1)
+        return preds
+
+
 def accuracy(gt, pred):
     return (gt==pred).mean()
 
@@ -185,7 +280,16 @@ def accuracy(gt, pred):
 def main():
     train_x, train_y, val_x, val_y = load_classification_data()
 
-    for nb in [GaussianNB(), SklearnGaussianNB(), MultinomialNB(), SklearnMultinomialNB()]:
+    for nb in [
+            GaussianNB(),
+            SklearnGaussianNB(),
+            MultinomialNB(),
+            SklearnMultinomialNB(),
+            LogisticRegression(),
+            SklearnLogisticRegression(),
+    ]:
+        print('x'*50)
+
         print(nb)
         nb.fit(train_x, train_y)
 
@@ -194,6 +298,8 @@ def main():
 
         val_yp = nb.predict(val_x)
         print('val accuracy', accuracy(val_y, val_yp))
+
+        print('y'*50)
 
 
 if __name__ == '__main__':
